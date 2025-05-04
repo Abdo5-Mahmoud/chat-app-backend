@@ -1,0 +1,20 @@
+sign up +
+confirm email +
+resend otp +
+login +
+get profile +
+send friend request
+accept friend
+delete friend
+block user
+get user by id
+get all users
+updateImage
+----------------------------------
+send message or image
+updateCoverImage
+update password
+update email
+logout
+delete message
+update message
