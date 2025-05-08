@@ -6,7 +6,7 @@ import { globalErrorHandling } from "./utils/res/error.res.js";
 import roomRouter from "./modules/room/room.controller.js";
 import chatRouter from "./modules/chats/chat.controller.js";
 export const bootstrap = (app, express) => {
-  app.use(cors());
+  app.use("*", cors());
   app.use(express.json());
 
   app.get("/", (req, res) => {

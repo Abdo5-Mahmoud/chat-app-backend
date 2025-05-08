@@ -15,10 +15,6 @@ export const runIo = async (httpServer) => {
 
   return io.on("connection", async (socket) => {
     const data = await registerSocket(socket);
-    // console.log(data);
-
-    // idea for notification for the new users added
-    // io.emit("userLoggedIn", data);
 
     socket.on("logOut", async () => {
       await logoutSocket(socket);
@@ -27,8 +23,8 @@ export const runIo = async (httpServer) => {
     socket.on("joinRoom", async (info) => {
       // console.log(info);
 
-      let roomSockets = io.sockets.adapter.rooms.get(info.roomId);
-      // console.log("Users in room before:", roomSockets ? roomSockets.size : 0);
+      // let roomSockets = io.sockets.adapter.rooms.get(info.roomId);
+      // // console.log("Users in room before:", roomSockets ? roomSockets.size : 0);
       socket.join(info.roomId);
 
       const data = await joinRoom({ info, socket });
@@ -38,8 +34,6 @@ export const runIo = async (httpServer) => {
     });
 
     socket.on("sendMessage", async (info) => {
-      // console.log(info);
-      // socket.to(roomId).emit("reciveMessage", data);
       if (info.mainUser) {
         const data = await sendMessageToFriend({ socket, info });
       } else {
@@ -48,7 +42,6 @@ export const runIo = async (httpServer) => {
       }
     });
     socket.on("leaveRoom", async (info) => {
-      // console.log(info);
       await leaveRoom({ info, socket });
     });
   });

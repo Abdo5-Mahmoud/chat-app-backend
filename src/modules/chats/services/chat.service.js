@@ -14,11 +14,6 @@ import { userModel } from "../../../DB/models/User.model.js";
 
 export const startChat = asyncHandler(async (req, res, next) => {
   const { friendId } = req.params;
-  // if (req.user.friends[friendId].state == "pending") {
-  //   req.user.friends[friendId].state = "accepted";
-  //   await req.user.save();
-  // }
-  // console.log(friendId);
 
   let chat = await dbService.findOne({
     model: chatModel,
@@ -36,23 +31,20 @@ export const startChat = asyncHandler(async (req, res, next) => {
     },
     select: "messages subParticipant mainUser",
   });
+  console.log(chat);
+
   if (!chat) {
     chat = await dbService.create({
       model: chatModel,
       data: { mainUser: req.user._id, subParticipant: friendId },
     });
-    await dbService.updateOne({
-      model: userModel,
-      filter: { _id: req.user._id },
-      data: { $push: { friends: { friendId } } },
-    });
   }
-
+  const { messages, subParticipant, mainUser, _id } = chat;
   return success({
     res,
     statusCode: 201,
     data: {
-      chat,
+      chat: { messages, subParticipant, mainUser, _id },
     },
   });
 });

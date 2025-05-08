@@ -27,12 +27,14 @@ export const getUser = asyncHandler(async (req, res, next) => {
     next(new Error("You Can't see this user profile", { cause: 400 }));
   }
   const { name, gender, image, coverImage } = theUser;
+  console.log(theUser);
+
   success({
     res,
-    data: { user: { _id, name, gender, image, coverImage } },
+    data: { user: { _id, name, image } },
   });
 });
-export const getAllUsersWithChats = asyncHandler(async (req, res, next) => {
+export const getAllUsers = asyncHandler(async (req, res, next) => {
   const users = await dbService.findAll({
     model: userModel,
     filter: { isDeleted: { $exists: false }, isConfirmed: true },

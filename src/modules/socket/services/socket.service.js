@@ -101,6 +101,95 @@ export const joinRoom = async ({ socket, info }) => {
   return { message: messageS, type: "system" };
 };
 
+export const sendMessageToFriend = async ({ socket, info }) => {
+  const { roomId, message, mainUser } = info;
+  const {
+    data: { user, valid },
+  } = await authenticationSocket({
+    socket,
+  });
+  // console.log(roomId, message, mainUser);
+  if (!valid) {
+    return {
+      statusCode: 400,
+      message: "User not found",
+    };
+  }
+  const chat = await dbService.findOneAndUpdate({
+    model: chatModel,
+    filter: { _id: roomId },
+    data: {
+      $push: {
+        messages: {
+          message: message,
+          senderId: user._id.toString(),
+        },
+      },
+    },
+    options: { new: true },
+  });
+  const toId =
+    chat.mainUser.toString() == user._id.toString()
+      ? chat.subParticipant.toString()
+      : chat.mainUser.toString();
+  // console.log(socketConnections[toId]);
+  // console.log(socketConnections.get(toId));
+
+  socket.to(`${socketConnections.get(toId)}`).emit("reciveMessage", {
+    roomId: chat._id.toString(),
+    message,
+    senderId: user._id.toString(),
+    type: "user",
+    mainUser: mainUser,
+    subParticipant: chat.subParticipant,
+  });
+  // console.log("done");
+
+  return {
+    message: "done",
+  };
+};
+
+export const leaveRoom = async ({ socket, info }) => {
+  const { roomId, userId } = info;
+
+  const {
+    data: { user, valid },
+  } = await authenticationSocket({
+    socket,
+  });
+  // console.log(data);
+
+  if (!valid) {
+    return {
+      statusCode: 400,
+      message: "User not found",
+    };
+  }
+  console.log(roomId);
+  const messageS = `${user?.username} has left the chat`;
+  const room = await dbService.findOneAndUpdate({
+    model: roomModel,
+    filter: { _id: roomId },
+    data: {
+      $pull: { users: userId },
+      $push: {
+        messages: {
+          message: messageS,
+          type: "system",
+        },
+      },
+    },
+    options: { new: true },
+  });
+  console.log(room);
+  socket.emit("successMessage", { message: "left" });
+  socket.broadcast.emit("reciveMessage", { message: messageS });
+  socketConnections.delete(user?._id?.toString());
+
+  return { message: "Done" };
+};
+
 export const sendMessage = async ({ socket, info }) => {
   const { roomId, message, mainUser } = info;
 
@@ -145,90 +234,4 @@ export const sendMessage = async ({ socket, info }) => {
     senderId: user._id.toString(),
     type: "user",
   };
-};
-
-export const sendMessageToFriend = async ({ socket, info }) => {
-  const { roomId, message, mainUser } = info;
-  const {
-    data: { user, valid },
-  } = await authenticationSocket({
-    socket,
-  });
-  // console.log(data);
-  if (!valid) {
-    return {
-      statusCode: 400,
-      message: "User not found",
-    };
-  }
-  const chat = await dbService.findOneAndUpdate({
-    model: chatModel,
-    filter: { _id: roomId },
-    data: {
-      $push: {
-        messages: {
-          message: message,
-          senderId: user._id.toString(),
-        },
-      },
-    },
-    options: { new: true },
-  });
-  const toId =
-    chat.mainUser.toString() == user._id.toString()
-      ? chat.subParticipant.toString()
-      : chat.mainUser.toString();
-  // console.log(socketConnections[toId]);
-  // console.log(socketConnections.get(toId));
-
-  socket.to(`${socketConnections.get(toId)}`).emit("reciveMessage", {
-    roomId: chat._id.toString(),
-    message,
-    senderId: user._id.toString(),
-    type: "user",
-    mainUser: mainUser,
-  });
-  return {
-    message: "done",
-  };
-};
-
-export const leaveRoom = async ({ socket, info }) => {
-  const { roomId, userId } = info;
-
-  const {
-    data: { user, valid },
-  } = await authenticationSocket({
-    socket,
-  });
-  // console.log(data);
-
-  if (!valid) {
-    return {
-      statusCode: 400,
-      message: "User not found",
-    };
-  }
-  console.log(roomId);
-  const messageS = `${user?.username} has left the chat`;
-  const room = await dbService.findOneAndUpdate({
-    model: roomModel,
-    filter: { _id: roomId },
-    data: {
-      $pull: { users: userId },
-      $push: {
-        messages: {
-          message: messageS,
-          type: "system",
-        },
-      },
-    },
-    options: { new: true },
-  });
-  console.log(room);
-  socket.emit("successMessage", { message: "left" });
-  socket.broadcast.emit("reciveMessage", { message: messageS });
-  socketConnections.delete(user?._id?.toString());
-
-  return { message: "Done" };
 };

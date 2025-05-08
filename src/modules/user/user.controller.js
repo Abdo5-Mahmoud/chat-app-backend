@@ -14,7 +14,7 @@ userRouter.get("/profile", authentication(), userServices.porfile);
 userRouter.get(
   "/getAllUsers",
   authentication(),
-  userServices.getAllUsersWithChats
+  userServices.getAllUsers
 );
 userRouter.get("/:userId", authentication(), userServices.getUser);
 userRouter.patch(
