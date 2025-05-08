@@ -27,7 +27,7 @@ export const getUser = asyncHandler(async (req, res, next) => {
     next(new Error("You Can't see this user profile", { cause: 400 }));
   }
   const { name, gender, image, coverImage } = theUser;
-  console.log(theUser);
+  // console.log(theUser);
 
   success({
     res,
