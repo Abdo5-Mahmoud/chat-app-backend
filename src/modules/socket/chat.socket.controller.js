@@ -15,23 +15,24 @@ export const runIo = async (httpServer) => {
 
   return io.on("connection", async (socket) => {
     const data = await registerSocket(socket);
+    // console.log(data);
 
     socket.on("logOut", async () => {
       await logoutSocket(socket);
     });
 
-    socket.on("joinRoom", async (info) => {
-      // console.log(info);
+    // socket.on("joinRoom", async (info) => {
+    //   // console.log(info);
 
-      // let roomSockets = io.sockets.adapter.rooms.get(info.roomId);
-      // // console.log("Users in room before:", roomSockets ? roomSockets.size : 0);
-      socket.join(info.roomId);
+    //   // let roomSockets = io.sockets.adapter.rooms.get(info.roomId);
+    //   // // console.log("Users in room before:", roomSockets ? roomSockets.size : 0);
+    //   socket.join(info.roomId);
 
-      const data = await joinRoom({ info, socket });
+    //   const data = await joinRoom({ info, socket });
 
-      data.roomId = info.roomId;
-      io.to(info.roomId).emit("userJoined", { data });
-    });
+    //   data.roomId = info.roomId;
+    //   io.to(info.roomId).emit("userJoined", { data });
+    // });
 
     socket.on("sendMessage", async (info) => {
       if (info.mainUser) {

@@ -31,7 +31,7 @@ export const startChat = asyncHandler(async (req, res, next) => {
     },
     select: "messages subParticipant mainUser",
   });
-  console.log(chat);
+  // console.log(chat);
 
   if (!chat) {
     chat = await dbService.create({

@@ -45,6 +45,7 @@ export const authenticationSocket = async ({
     token,
     signature: tokenType == "access" ? accessSignature : refreshSignature,
   });
+  // console.log(decoded);
 
   if (!decoded.id)
     return {
@@ -59,6 +60,7 @@ export const authenticationSocket = async ({
     filter: { _id: decoded.id },
     select: "_id name image",
   });
+  // console.log(user);
 
   if (!user)
     return {

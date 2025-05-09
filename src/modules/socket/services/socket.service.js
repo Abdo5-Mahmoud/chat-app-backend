@@ -126,6 +126,7 @@ export const sendMessageToFriend = async ({ socket, info }) => {
         },
       },
     },
+    select: "-createdAt -updatedAt -__v",
     options: { new: true },
   });
   const toId =
@@ -134,6 +135,7 @@ export const sendMessageToFriend = async ({ socket, info }) => {
       : chat.mainUser.toString();
   // console.log(socketConnections[toId]);
   // console.log(socketConnections.get(toId));
+  console.log(chat);
 
   socket.to(`${socketConnections.get(toId)}`).emit("reciveMessage", {
     roomId: chat._id.toString(),
