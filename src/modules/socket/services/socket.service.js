@@ -135,7 +135,9 @@ export const sendMessageToFriend = async ({ socket, info }) => {
       : chat.mainUser.toString();
   // console.log(socketConnections[toId]);
   // console.log(socketConnections.get(toId));
-  console.log(chat);
+  // console.log(chat);
+  console.log(socketConnections);
+  console.log(socketConnections.get(toId));
 
   socket.to(`${socketConnections.get(toId)}`).emit("reciveMessage", {
     roomId: chat._id.toString(),

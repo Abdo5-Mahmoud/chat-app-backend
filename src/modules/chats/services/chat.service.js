@@ -63,8 +63,14 @@ export const allChats = asyncHandler(async (req, res, next) => {
         },
       ],
     },
-    select:
-      "messages.senderId messages.type messages.message subParticipant mainUser",
+    select: {
+      messages: { $slice: -50 }, // Get last 50 messages
+      "messages.senderId": 1,
+      "messages.message": 1,
+      "messages.type": 1,
+      mainUser: 1,
+      subParticipant: 1,
+    },
   });
   // console.log(chats, "none");
   return success({
