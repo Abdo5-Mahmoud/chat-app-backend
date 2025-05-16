@@ -69,7 +69,7 @@ export const allChats = asyncHandler(async (req, res, next) => {
       subParticipant: 1,
     },
   });
-  console.log(chats, "none");
+  // console.log(chats, "none");
   return success({
     res,
     statusCode: 200,
