@@ -7,22 +7,29 @@ import { proviedersType, userModel } from "../../../DB/models/User.model.js";
 import { OAuth2Client } from "google-auth-library";
 export const login = asyncHandler(async (req, res, next) => {
   const { email, password } = req.body;
+
   const user = await dbService.findOne({
     model: userModel,
-    filter: { email, isDeleted: { $exists: false } },
-    isConfirmed: true,
+    filter: { email: email, isDeleted: { $exists: false } },
   });
+
+  if (!user) {
+    return next(new Error("invalid email or password"));
+  }
+  if (!user.isConfirmed)
+    return next(new Error("please confirm your email", { cause: 400 }));
+
   const isMatch = compareHash({
     plaintText: password,
     hashValue: user.password,
   });
   // console.log(isMatch);
 
-  if (!user || !isMatch) {
+  if (!isMatch) {
     return next(new Error("invalid email or password"));
   }
   if (user.twoStepVerification) {
-    return res.json({ message: "twoStepVerification" });
+    return next(new Error("twoStepVerification is enabled", { cause: 403 }));
   }
   if (user.provider === proviedersType.google) {
     return next(new Error("please login with google", { cause: 409 }));
@@ -45,6 +52,7 @@ export const login = asyncHandler(async (req, res, next) => {
     data: { token },
   });
 });
+
 export const loginWithGmail = asyncHandler(async (req, res, next) => {
   const { credential: idToken } = req.body;
   // console.log(req.body);

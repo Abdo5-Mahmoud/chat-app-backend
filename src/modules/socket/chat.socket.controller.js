@@ -1,49 +1,50 @@
-import { socketConnections } from "../../DB/models/User.model.js";
+import { Server } from "socket.io";
 import {
-  joinRoom,
   leaveRoom,
   logoutSocket,
   registerSocket,
   sendMessage,
   sendMessageToFriend,
+  updateMessageStatus,
 } from "./services/socket.service.js";
-import { Server } from "socket.io";
+import { socketConnections, socketToUser } from "../../DB/models/User.model.js";
 export const runIo = async (httpServer) => {
   const io = new Server(httpServer, {
     cors: "*",
   });
 
   return io.on("connection", async (socket) => {
-    const data = await registerSocket(socket);
-    // console.log(data);
+    const { user, valid } = await registerSocket(socket);
+    socket.user = user;
+    // console.log(socketConnections);
 
-    socket.on("logOut", async () => {
-      await logoutSocket(socket);
+    const { grouped, noMessages } = await updateMessageStatus({
+      socket,
+    });
+
+    if (!noMessages) {
+      for (const [senderId, msgs] of Object.entries(grouped)) {
+        const socketId = socketConnections.get(senderId);
+
+        if (!socketId) continue;
+
+        io.to(socketId).emit("messagesDelivered", {
+          messages: [...msgs],
+        });
+      }
+    }
+
+    socket.on("disconnect", async (data) => {
+      const logoutData = await logoutSocket(socket);
+      // console.log(logoutData);
     });
 
     socket.on("sendMessage", async (info) => {
-      if (info.mainUser) {
-        const data = await sendMessageToFriend({ socket, info });
-      } else {
-        const data = await sendMessage({ info, socket });
-        io.emit("reciveMessage", data);
-      }
+      const data = await sendMessageToFriend({ socket, info });
     });
+
     socket.on("leaveRoom", async (info) => {
       await leaveRoom({ info, socket });
     });
   });
 };
-
-// socket.on("joinRoom", async (info) => {
-//   // console.log(info);
-
-//   // let roomSockets = io.sockets.adapter.rooms.get(info.roomId);
-//   // // console.log("Users in room before:", roomSockets ? roomSockets.size : 0);
-//   socket.join(info.roomId);
-
-//   const data = await joinRoom({ info, socket });
-
-//   data.roomId = info.roomId;
-//   io.to(info.roomId).emit("userJoined", { data });
-// });

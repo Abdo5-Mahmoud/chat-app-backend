@@ -19,6 +19,8 @@ export const verifyToken = ({
     const decoded = jwt.verify(token, signature);
     return decoded;
   } catch (err) {
+    // console.log(err);
+
     return new Error("token expired", { cause: 401 });
   }
 };
@@ -41,7 +43,7 @@ export const decodeToken = async ({
     return next(
       new Error("Authorization is required or invalid formated", {
         cause: 400,
-      })
+      }),
     );
   }
   let accessSignature = "";

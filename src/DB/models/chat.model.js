@@ -2,39 +2,23 @@ import mongoose, { model, Schema, Types } from "mongoose";
 
 const chatSchema = new Schema(
   {
-    messages: [
+    participants: [
       {
-        senderId: {
-          type: Types.ObjectId,
-          ref: "User",
-        },
-        message: {
-          type: String,
-          required: true,
-        },
-        createdAt: {
-          type: Date,
-          default: Date.now,
-        },
-        type: {
-          type: String,
-          enum: ["user", "system"],
-          default: "user",
-        },
+        type: Types.ObjectId,
+        ref: "User",
+        required: true,
+        index: true,
       },
     ],
-    mainUser: {
-      type: Types.ObjectId,
-      ref: "User",
+    conversationKey: {
+      type: String,
       require: true,
+      unique: true,
     },
-    subParticipant: {
-      type: Types.ObjectId,
-      ref: "User",
-      require: true,
-    },
+    lastMessageAt: Date,
+    lastMessage: String,
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-export const chatModel = mongoose.model.Chat || model("Chat", chatSchema);
+export const chatModel = mongoose.models.Chat || model("Chat", chatSchema);

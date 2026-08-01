@@ -28,6 +28,7 @@ export const findOne = async ({
   populate = [],
 } = {}) => {
   const docs = await model.findOne(filter).select(select).populate(populate);
+
   return docs;
 };
 export const findOneAndUpdate = async ({
@@ -78,7 +79,7 @@ export const updateMany = async ({
   data = {},
   options = {},
 } = {}) => {
-  const docs = await model.find(filter, data, options);
+  const docs = await model.updateMany(filter, data, options);
 
   return docs;
 };

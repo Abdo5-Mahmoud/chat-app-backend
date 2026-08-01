@@ -49,27 +49,22 @@ export const startChat = asyncHandler(async (req, res, next) => {
   });
 });
 export const allChats = asyncHandler(async (req, res, next) => {
-  // console.log("form all chats");
-
+  // populate with the friend data that in the chat
   const chats = await dbService.findAll({
     model: chatModel,
+
     filter: {
-      $or: [
-        {
-          mainUser: req.user._id,
-        },
-        {
-          subParticipant: req.user._id,
-        },
-      ],
+      participants: req.user._id,
     },
-    select: {
-      messages: { $slice: -50 }, // Get last 50 messages
-      mainUser: 1,
-      subParticipant: 1,
-    },
+    populate: [
+      {
+        path: "participants",
+        select: "_id name email image",
+      },
+    ],
+    sort: { lastMessageAt: -1 },
   });
-  // console.log(chats, "none");
+
   return success({
     res,
     statusCode: 200,

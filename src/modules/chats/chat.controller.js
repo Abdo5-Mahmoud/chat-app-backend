@@ -5,6 +5,6 @@ const chatRouter = Router();
 
 // chatRouter.get("/all", authentication(), roomServices.getAllUsers);
 chatRouter.get("/allChats", authentication(), roomServices.allChats);
-chatRouter.get("/:friendId", authentication(), roomServices.startChat);
+chatRouter.get("/:id", authentication(), roomServices.startChat);
 chatRouter.delete("/:friendId", authentication(), roomServices.deleteChat);
 export default chatRouter;

@@ -1,6 +1,10 @@
 // import userModel from "../../DB/models/User.model.js";
 import * as dbServices from "../../DB/db.service.js";
-import { userModel } from "../../DB/models/User.model.js";
+import {
+  socketConnections,
+  socketToUser,
+  userModel,
+} from "../../DB/models/User.model.js";
 import { verifyToken } from "../../utils/security/token.security.js";
 
 export const authenticationSocket = async ({
@@ -8,6 +12,11 @@ export const authenticationSocket = async ({
   tokenType = "access",
 }) => {
   const { authorization } = socket.handshake?.auth;
+
+  // only for postman test
+  // const { authorization } = socket.handshake?.headers;
+  // console.log("auth", authorization);
+
   if (!authorization)
     return {
       data: {
@@ -15,9 +24,7 @@ export const authenticationSocket = async ({
         message: "authorization is required",
       },
     };
-
   const [bearer, token] = authorization?.split(" ") || [];
-  // console.log(authorization);
 
   if (!bearer || !token) {
     return {
@@ -45,7 +52,6 @@ export const authenticationSocket = async ({
     token,
     signature: tokenType == "access" ? accessSignature : refreshSignature,
   });
-  // console.log(decoded);
 
   if (!decoded.id)
     return {
@@ -60,7 +66,9 @@ export const authenticationSocket = async ({
     filter: { _id: decoded.id },
     select: "_id name image",
   });
-  // console.log(user);
+
+  socketConnections.set(user._id.toString(), socket.id);
+  socketToUser.set(socket.id, user._id.toString());
 
   if (!user)
     return {

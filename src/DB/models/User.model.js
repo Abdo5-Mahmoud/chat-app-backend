@@ -65,7 +65,11 @@ const userSchema = new Schema(
     changeCradinal: Date,
     blockedUsers: [Types.ObjectId],
   },
-  { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
+  {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  },
 );
 // userSchema.virtual("chatsAsMain", {
 //   ref: "Chat",
@@ -82,6 +86,7 @@ const userSchema = new Schema(
 // });
 
 export const userModel =
-  mongoose.model.User || mongoose.model("User", userSchema);
+  mongoose.models.User || mongoose.model("User", userSchema);
 
 export const socketConnections = new Map();
+export const socketToUser = new Map();
