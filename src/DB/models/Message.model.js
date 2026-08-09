@@ -5,16 +5,19 @@ const messageSchema = new Schema(
     roomId: {
       type: Types.ObjectId,
       ref: "Chat",
+      required: true,
     },
     senderId: {
       type: Types.ObjectId,
       ref: "User",
+      required: true,
     },
     receiverId: {
       type: Types.ObjectId,
       ref: "User",
+      required: true,
     },
-    message: String,
+    message: { type: String, required: true, trim: true },
     media: [],
     messageStatus: {
       type: String,

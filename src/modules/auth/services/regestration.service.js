@@ -1,6 +1,6 @@
 import * as dbServices from "../../../DB/db.service.js";
 import { userModel } from "../../../DB/models/User.model.js";
-import { emailEvent } from "../../../utils/events/email.events.js";
+import { sendOtpEmail } from "../../../utils/events/email.events.js";
 import { asyncHandler } from "../../../utils/res/error.res.js";
 import { success } from "../../../utils/res/success.res.js";
 import {
@@ -31,7 +31,7 @@ export const signup = asyncHandler(async (req, res, next) => {
   });
 
   // console.log("done");
-  emailEvent.emit("sendConfirmEmail", { email, next });
+  await sendOtpEmail({ email });
   return success({
     res,
     statusCode: 201,
@@ -60,6 +60,8 @@ export const confirmEmail = asyncHandler(async (req, res, next) => {
 
   if (user.otpExp < Date.now())
     return next(new Error("otp expired", { cause: 400 }));
+  if (user.otpAttempts >= 5)
+    return next(new Error("too many invalid OTP attempts", { cause: 429 }));
 
   const comparedResult = compareHash({
     plaintText: otp,
@@ -67,13 +69,21 @@ export const confirmEmail = asyncHandler(async (req, res, next) => {
   });
   // console.log(comparedResult);
 
-  if (!comparedResult) return next(new Error("invalid otp", { cause: 400 }));
+  if (!comparedResult) {
+    await dbServices.updateOne({
+      model: userModel,
+      filter: { email },
+      data: { $inc: { otpAttempts: 1 } },
+    });
+    return next(new Error("invalid otp", { cause: 400 }));
+  }
 
   const dataUnset = {
     confirmEmailOtp: 1,
     otpExp: 1,
     otpCounter: 1,
     otpTimer: 1,
+    otpAttempts: 1,
   };
   await dbServices.updateOne({
     model: userModel,
@@ -101,7 +111,7 @@ export const resendOtp = asyncHandler(async (req, res, next) => {
 
   if (user.otpTimer > Date.now())
     return next(new Error("please wait 5 minutes", { cause: 400 }));
-  emailEvent.emit("sendConfirmEmail", { email, next });
+  await sendOtpEmail({ email });
 
   return success({
     res,

@@ -18,6 +18,12 @@ export const runIo = async (httpServer) => {
     const { user, valid } = await registerSocket(socket);
     socket.user = user;
 
+    if (!valid || !user?._id) {
+      socket.emit("connectError", { message: "Authentication failed" });
+      socket.disconnect(true);
+      return;
+    }
+
     if (user?._id) {
       const userIdStr = user._id.toString();
       // Send active online users list to connected user

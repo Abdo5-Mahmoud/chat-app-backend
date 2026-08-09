@@ -110,11 +110,23 @@ export const sendMessageToFriend = async ({ socket, info }) => {
   const receiver = await dbService.findById({
     model: userModel,
     id: receiverId,
-    select: "_id",
+    select: "_id blockedUsers",
   });
   if (!receiver) {
     const error = new Error("Recipient was not found");
     error.cause = 404;
+    throw error;
+  }
+  const sender = await dbService.findById({
+    model: userModel,
+    id: senderId,
+    select: "blockedUsers",
+  });
+  const isBlocked = (users = [], id) =>
+    users.some((blockedId) => blockedId.toString() === id.toString());
+  if (isBlocked(sender?.blockedUsers, receiverId) || isBlocked(receiver.blockedUsers, senderId)) {
+    const error = new Error("Messaging is unavailable for this user");
+    error.cause = 403;
     throw error;
   }
   const conversationKey = [senderId, receiverId].sort().join("_");

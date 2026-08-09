@@ -23,20 +23,12 @@ const userSchema = new Schema(
       type: Boolean,
       default: false,
     },
-    // friends: [
-    //   {
-    //     friendId: {
-    //       type: Types.ObjectId,
-    //       ref: "User",
-    //       required: true,
-    //     },
-    //     state: {
-    //       type: String,
-    //       enum: ["pending", "accepted", "rejected"],
-    //       default: "pending",
-    //     },
-    //   },
-    // ],
+    friends: [
+      {
+        user: { type: Types.ObjectId, ref: "User", required: true },
+        state: { type: String, enum: ["pending", "accepted", "rejected"], default: "pending" },
+      },
+    ],
     image: { secure_url: String, public_id: String },
     coverImage: [String],
     twoStepVerification: {
@@ -60,6 +52,7 @@ const userSchema = new Schema(
     otpTimer: Date,
     otpExp: Date,
     otpCounter: Number,
+    otpAttempts: { type: Number, default: 0 },
 
     isDeleted: Date,
     changeCradinal: Date,

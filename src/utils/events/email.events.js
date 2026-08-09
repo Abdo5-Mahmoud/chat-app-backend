@@ -45,6 +45,7 @@ const sendMail = async ({ emailData, subject }) => {
       $set: {
         ...dataUpdate,
         otpExp: Date.now() + 1000 * 60 * 5,
+        otpAttempts: 0,
         otpCounter:
           user.otpCounter >= 5
             ? 1
@@ -63,6 +64,9 @@ const sendMail = async ({ emailData, subject }) => {
     html,
   });
 };
+
+export const sendOtpEmail = ({ email, subject = "confirmEmail" }) =>
+  sendMail({ emailData: { email }, subject });
 
 export const emailEvent = new EventEmitter();
 

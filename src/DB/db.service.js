@@ -121,12 +121,12 @@ export const findByIdAndDelete = async ({
   return docs;
 };
 export const deleteOne = async ({ model, filter = {} } = {}) => {
-  const docs = await model.find(filter);
+  const docs = await model.deleteOne(filter);
 
   return docs;
 };
 export const deleteMany = async ({ model, filter = {}, data = {} } = {}) => {
-  const docs = await model.find(filter, data);
+  const docs = await model.deleteMany(filter, data);
 
   return docs;
 };

@@ -28,9 +28,6 @@ export const login = asyncHandler(async (req, res, next) => {
   if (!isMatch) {
     return next(new Error("invalid email or password"));
   }
-  if (user.twoStepVerification) {
-    return next(new Error("twoStepVerification is enabled", { cause: 403 }));
-  }
   if (user.provider === proviedersType.google) {
     return next(new Error("please login with google", { cause: 409 }));
   }
@@ -109,4 +106,13 @@ export const loginWithGmail = asyncHandler(async (req, res, next) => {
     statusCode: 200,
     data: { message: "login successfully", token },
   });
+});
+
+export const logout = asyncHandler(async (req, res) => {
+  await dbService.updateOne({
+    model: userModel,
+    filter: { _id: req.user._id },
+    data: { changeCradinal: new Date() },
+  });
+  return success({ res, data: { message: "logged out successfully" } });
 });

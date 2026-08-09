@@ -22,9 +22,9 @@ export const getUser = asyncHandler(async (req, res, next) => {
     model: userModel,
     filter: { _id: userId, isDeleted: { $exists: false }, isConfirmed: true },
   });
-  if (!theUser) next(new Error("You can't see this profile", { cause: 404 }));
-  if (theUser?.blockedUsers?.includes(user._id) || 0) {
-    next(new Error("You Can't see this user profile", { cause: 400 }));
+  if (!theUser) return next(new Error("You can't see this profile", { cause: 404 }));
+  if (theUser?.blockedUsers?.some((id) => id.toString() === user._id.toString())) {
+    return next(new Error("You Can't see this user profile", { cause: 400 }));
   }
   const { name, gender, image, coverImage } = theUser;
   // console.log(theUser);
@@ -37,7 +37,12 @@ export const getUser = asyncHandler(async (req, res, next) => {
 export const getAllUsers = asyncHandler(async (req, res, next) => {
   const users = await dbService.findAll({
     model: userModel,
-    filter: { isDeleted: { $exists: false }, isConfirmed: true },
+    filter: {
+      isDeleted: { $exists: false },
+      isConfirmed: true,
+      _id: { $nin: [...(req.user.blockedUsers || []), req.user._id] },
+      blockedUsers: { $ne: req.user._id },
+    },
     select: " name image _id ",
     // populate: ["chatsAsMain", "chatsAsSub"],
   });

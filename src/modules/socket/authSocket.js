@@ -26,7 +26,7 @@ export const authenticationSocket = async ({
     };
   const [bearer, token] = authorization?.split(" ") || [];
 
-  if (!bearer || !token) {
+  if (!bearer || !token || bearer.toLowerCase() !== "bearer") {
     return {
       data: {
         statusCode: 400,
@@ -67,9 +67,6 @@ export const authenticationSocket = async ({
     select: "_id name image",
   });
 
-  socketConnections.set(user._id.toString(), socket.id);
-  socketToUser.set(socket.id, user._id.toString());
-
   if (!user)
     return {
       data: {
@@ -79,7 +76,7 @@ export const authenticationSocket = async ({
     };
 
   if (
-    decoded.iat < parseInt(user?.changeCridentialTime?.getTime() / 1000) ||
+    decoded.iat <= parseInt(user?.changeCradinal?.getTime() / 1000) ||
     0
   ) {
     return {
@@ -89,5 +86,7 @@ export const authenticationSocket = async ({
       },
     };
   }
+  socketConnections.set(user._id.toString(), socket.id);
+  socketToUser.set(socket.id, user._id.toString());
   return { data: { user, valid: true } };
 };

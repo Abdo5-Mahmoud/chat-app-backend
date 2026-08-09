@@ -3,6 +3,7 @@ import * as dbService from "../../../DB/db.service.js";
 import { success } from "../../../utils/res/success.res.js";
 import { chatModel } from "../../../DB/models/chat.model.js";
 import { userModel } from "../../../DB/models/User.model.js";
+import { MessageModel } from "../../../DB/models/Message.model.js";
 
 // export const getAllUsers = asyncHandler(async (req, res, next) => {
 //   const users = await dbService.findAll({
@@ -13,39 +14,18 @@ import { userModel } from "../../../DB/models/User.model.js";
 // });
 
 export const startChat = asyncHandler(async (req, res, next) => {
-  const { friendId } = req.params;
-
-  let chat = await dbService.findOne({
+  const { id: friendId } = req.params;
+  const chat = await dbService.findOne({
     model: chatModel,
     filter: {
-      $or: [
-        {
-          mainUser: req.user._id,
-          subParticipant: friendId,
-        },
-        {
-          mainUser: friendId,
-          subParticipant: req.user._id,
-        },
-      ],
+      participants: { $all: [req.user._id, friendId] },
     },
-    select: "messages subParticipant mainUser",
+    populate: [{ path: "participants", select: "_id name image" }],
   });
-  // console.log(chat);
-
-  if (!chat) {
-    chat = await dbService.create({
-      model: chatModel,
-      data: { mainUser: req.user._id, subParticipant: friendId },
-    });
-  }
-  const { messages, subParticipant, mainUser, _id } = chat;
+  if (!chat) return next(new Error("Chat not found", { cause: 404 }));
   return success({
     res,
-    statusCode: 201,
-    data: {
-      chat: { messages, subParticipant, mainUser, _id },
-    },
+    data: { chat },
   });
 });
 export const allChats = asyncHandler(async (req, res, next) => {
@@ -77,23 +57,15 @@ export const allChats = asyncHandler(async (req, res, next) => {
 export const deleteChat = asyncHandler(async (req, res, next) => {
   const { friendId } = req.params;
 
-  await dbService.deleteOne({
-    model: roomModel,
+  const chat = await dbService.findOne({
+    model: chatModel,
     filter: {
-      $or: [
-        {
-          mainUser: req.user._id,
-          subParticipant: friendId,
-        },
-        {
-          mainUser: friendId,
-          subParticipant: req.user._id,
-        },
-      ],
+      participants: { $all: [req.user._id, friendId] },
     },
   });
+  if (!chat) return next(new Error("Chat not found", { cause: 404 }));
+  await dbService.deleteOne({ model: chatModel, filter: { _id: chat._id } });
+  await dbService.deleteMany({ model: MessageModel, filter: { roomId: chat._id } });
 
-  return success(res, 200, {
-    message: "Chat deleted successfully",
-  });
+  return success({ res, data: { message: "Chat deleted successfully" } });
 });

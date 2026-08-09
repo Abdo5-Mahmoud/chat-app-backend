@@ -48,7 +48,7 @@ export const decodeToken = async ({
   }
   let accessSignature = "";
   let refreshSignature = "";
-  switch (bearer) {
+  switch (bearer.toUpperCase()) {
     case "MINE":
       accessSignature = process.env.ADMIN_ACCESS_TOKEN;
       refreshSignature = process.env.ADMIN_REFRESH_TOKEN;
@@ -77,7 +77,7 @@ export const decodeToken = async ({
   if (!user) return next(new Error("User not found", { cause: 404 }));
 
   if (
-    decoded.iat < parseInt(user.changeCridentialTime?.getTime() / 1000) ||
+    decoded.iat <= parseInt(user.changeCradinal?.getTime() / 1000) ||
     0
   ) {
     return next(new Error("Please login again", { cause: 400 }));
