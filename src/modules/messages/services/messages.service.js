@@ -20,7 +20,9 @@ export const getMessagesByChatId = asyncHandler(async (req, res, next) => {
     filter: {
       roomId,
     },
-    sort: { createdAt: 1 },
+    sort: {
+      createdAt: -1,
+    },
     limit: 50,
   });
 
@@ -28,7 +30,7 @@ export const getMessagesByChatId = asyncHandler(async (req, res, next) => {
     res,
     statusCode: 200,
     data: {
-      messages,
+      messages: messages,
     },
   });
 });

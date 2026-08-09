@@ -1,7 +1,9 @@
 import {
   socketConnections,
   socketToUser,
+  userModel,
 } from "../../../DB/models/User.model.js";
+import mongoose from "mongoose";
 import * as dbService from "../../../DB/db.service.js";
 import roomModel from "../../../DB/models/Room.model.js";
 import { authenticationSocket } from "../authSocket.js";
@@ -39,17 +41,8 @@ export const registerSocket = async (socket) => {
 };
 
 export const logoutSocket = async (socket) => {
-  const { data } = await authenticationSocket({
-    socket,
-  });
-  if (!data.valid) {
-    socketConnections.delete(data?.user?._id?.toString());
-    return socket.emit("socketErrorResp", {
-      statusCode: 400,
-      message: "User not found",
-    });
-  }
-  socketConnections.delete(data?.user?._id?.toString());
+  const user = socket.user;
+  socketConnections.delete(user?._id?.toString());
   return "Disconnected";
 };
 
@@ -93,53 +86,80 @@ export const logoutSocket = async (socket) => {
 // };
 
 export const sendMessageToFriend = async ({ socket, info }) => {
-  const { message, roomId, receiverId } = info;
+  const { message, roomId, receiverId } = info || {};
 
-  const {
-    data: { valid, user, ...errorData },
-  } = await authenticationSocket({
-    socket,
-  });
-
-  if (!valid) {
-    console.log(errorData);
-    socket.emit("dissconnected", errorData);
-    socket.discconect();
-    return errorData;
-  }
+  const user = socket.user;
   const senderId = user._id.toString();
+
+  if (typeof message !== "string" || !message.trim()) {
+    const error = new Error("A non-empty message is required");
+    error.cause = 400;
+    throw error;
+  }
+
+  if (
+    !receiverId ||
+    receiverId === senderId ||
+    !mongoose.isValidObjectId(receiverId)
+  ) {
+    const error = new Error("A valid recipient is required");
+    error.cause = 400;
+    throw error;
+  }
+
+  const receiver = await dbService.findById({
+    model: userModel,
+    id: receiverId,
+    select: "_id",
+  });
+  if (!receiver) {
+    const error = new Error("Recipient was not found");
+    error.cause = 404;
+    throw error;
+  }
   const conversationKey = [senderId, receiverId].sort().join("_");
   let chat;
   if (roomId) {
+    if (!mongoose.isValidObjectId(roomId)) {
+      const error = new Error("Chat ID is invalid");
+      error.cause = 400;
+      throw error;
+    }
     chat = await dbService.findOne({
       model: chatModel,
       filter: {
         _id: roomId,
-        participants: senderId,
+        participants: { $all: [senderId, receiverId] },
       },
-      select: "-createdAt -updatedAt -__v",
-      options: { new: true },
     });
-  } else {
-    chat = await dbService.findOne({
-      model: chatModel,
-      filter: {
-        conversationKey: conversationKey,
-      },
-      select: "-createdAt -updatedAt -__v",
-      options: { new: true },
-    });
-
     if (!chat) {
-      chat = await dbService.create({
-        model: chatModel,
-        data: {
-          participants: [senderId, receiverId],
-          conversationKey,
+      const error = new Error("Chat was not found or you are not a participant");
+      error.cause = 404;
+      throw error;
+    }
+  } else {
+    // Upsert makes two simultaneous first messages share one conversation.
+    try {
+      chat = await chatModel.findOneAndUpdate(
+        { conversationKey },
+        {
+          $setOnInsert: {
+            participants: [senderId, receiverId],
+            conversationKey,
+          },
         },
+        { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true },
+      );
+    } catch (error) {
+      // A concurrent first message can briefly race on the unique key.
+      if (error?.code !== 11000) throw error;
+      chat = await dbService.findOne({
+        model: chatModel,
+        filter: { conversationKey },
       });
     }
   }
+
   const isUserOnline = socketConnections.has(receiverId);
 
   const newMessage = await dbService.create({
@@ -147,23 +167,21 @@ export const sendMessageToFriend = async ({ socket, info }) => {
     data: {
       roomId: chat._id,
       senderId: senderId,
-      message: message,
+      message: message.trim(),
       messageStatus: isUserOnline ? "delivered" : "sent",
       receiverId,
     },
   });
 
-  chat.lastMessage = message;
+  chat.lastMessage = message.trim();
   chat.lastMessageAt = new Date();
   await chat.save();
+  await chat.populate("participants", "_id name image");
 
-  socket
-    .to(socketConnections.get(receiverId))
-    .emit("receiveMessage", { message: newMessage });
-
-  socket.emit("messageSent", { message: newMessage });
   return {
-    message: "message sent",
+    message: newMessage.toObject(),
+    chat: chat.toObject(),
+    receiverId,
   };
 };
 
@@ -202,6 +220,52 @@ export const updateMessageStatus = async ({ socket }) => {
     return { grouped };
   } else {
     return { noMessages: true };
+  }
+};
+
+export const updateReadMessageStatus = async ({ socket, info }) => {
+  const userId = socket.user._id.toString();
+  if (!userId) {
+    socket.emit("dissconnected", {
+      statusCode: 400,
+      message: "User not found",
+    });
+    socket.disconnect();
+    return {
+      statusCode: 400,
+      message: "User not found",
+    };
+  }
+  const { roomId } = info;
+  const data = await dbService.updateMany({
+    model: MessageModel,
+    filter: {
+      receiverId: userId,
+      messageStatus: "delivered",
+      roomId,
+    },
+    data: { messageStatus: "seen" },
+    options: { new: true },
+  });
+  const chat = await dbService.findById({
+    id: roomId,
+    model: chatModel,
+  });
+
+  const senderId = chat.participants
+    .find((id) => id.toString() !== socket.user._id.toString())
+    .toString();
+
+  if (data?.modifiedCount) {
+    return {
+      statusCode: 200,
+      senderId,
+    };
+  } else {
+    return {
+      statusCode: 400,
+      message: "No messages found",
+    };
   }
 };
 

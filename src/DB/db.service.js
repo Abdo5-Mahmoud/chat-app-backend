@@ -21,6 +21,16 @@ export const findAll = async ({
     .limit(limit);
   return docs;
 };
+export const findById = async ({
+  model,
+  id = "",
+  select = "",
+  populate = [],
+} = {}) => {
+  const docs = await model.findById(id).select(select).populate(populate);
+
+  return docs;
+};
 export const findOne = async ({
   model,
   filter = {},

@@ -12,8 +12,9 @@ const chatSchema = new Schema(
     ],
     conversationKey: {
       type: String,
-      require: true,
+      required: true,
       unique: true,
+      index: true,
     },
     lastMessageAt: Date,
     lastMessage: String,
